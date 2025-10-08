@@ -1,53 +1,30 @@
 pipeline {
     agent any
 
-    environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-cred')  // use your ID here
-        IMAGE_NAME = 'khade2004/java-docker-app'               // Docker Hub repo name
-    }
-
     stages {
-        stage('Checkout Code') {
+        stage('Clone Repository') {
             steps {
-                echo 'Cloning repository from GitHub...'
-                git branch: 'main', url: 'https://github.com/MrunalKhade/JAVA.DOCKER.git'
+                git 'https://github.com/MrunalKhade/JAVA.DOCKER.git'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                echo 'Building Docker image...'
                 script {
-                    dockerImage = docker.build("${IMAGE_NAME}:latest")
+                    dockerImage = docker.build("mrunalkhade/javaapp:latest")
                 }
             }
         }
 
         stage('Push to Docker Hub') {
             steps {
-                echo 'Pushing Docker image to Docker Hub...'
-                script {
-                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-cred') {
-                        dockerImage.push('latest')
+                withDockerRegistry(credentialsId: 'dockerhub-cred', toolName: 'docker') {
+                    script {
+                        dockerImage.push()
                     }
                 }
             }
         }
-
-        stage('Clean up') {
-            steps {
-                echo 'Removing local Docker images...'
-                sh 'docker rmi ${IMAGE_NAME}:latest || true'
-            }
-        }
-    }
-
-    post {
-        success {
-            echo 'Pipeline completed successfully! 🎉'
-        }
-        failure {
-            echo 'Pipeline failed! ❌'
-        }
     }
 }
+
